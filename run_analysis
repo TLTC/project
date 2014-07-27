@@ -1,0 +1,51 @@
+run_analysis <- function (){
+    features<-read.table("./features.txt")
+    activitylabel<-read.table("./activity_labels.txt")
+    testsubject<-read.table("./test/subject_test.txt")
+    testx<-read.table("./test/X_test.txt")
+    testy<-read.table("./test/y_test.txt")
+    trainsubject<-read.table("./train/subject_train.txt")
+    trainx<-read.table("./train/X_train.txt")
+    trainy<-read.table("./train/y_train.txt")
+    
+    #Add column names for testx using features
+    colnames(testx)<-features$V2
+    
+    ##Extract the columns with the word "mean" and "std" in it
+    testxExtracted<-testx[,grep("mean|std",colnames(testx),ignore.case=TRUE)]
+    
+    #Turn V1 from integers into characters
+    testyAsChar<-as.character(testy$V1)
+    
+    #Map activitylabel into testyAsChar to show the long name of the activities
+    activity<-factor(testyAsChar,levels=activitylabel$V1,labels=activitylabel$V2)
+    
+    #Add column name to testsubject
+    colnames(testsubject)<-"subjectID"
+    
+    #Make the full dataset for the test subjects
+    fullTest<-cbind(testsubject,activity,testxExtracted)
+    
+    #Repeat the above for the training dataset
+
+    colnames(trainx)<-features$V2
+    trainxExtracted<-trainx[,grep("mean|std",colnames(trainx),ignore.case=TRUE)]
+    trainyAsChar<-as.character(trainy$V1)
+    activity<-factor(trainyAsChar,levels=activitylabel$V1,labels=activitylabel$V2)
+    colnames(trainsubject)<-"subjectID"
+    fullTrain<-cbind(trainsubject,activity,trainxExtracted)
+    
+    #The first dataset, point 1 to 4
+    fullCombined<-rbind(fullTest,fullTrain)
+    
+    fullFeatures<-colnames(fullCombined)
+    
+    #Melting the dataset - tall and skiny
+    fullMelt<-melt(fullCombined,id=c("subjectID","activity"),
+                   measure.vars=fullFeatures[3:length(fullFeatures)])
+    
+    fullAvg<-dcast(fullMelt,subjectID+activity~variable,mean)
+    
+    write.table(fullAvg, "./fullAvg.txt") 
+}
+
